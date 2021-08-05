@@ -68,140 +68,140 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name:     "SELECT works",
-			SQL:      "SELECT a FROM 'b'",
+			SQL:      "SELECT a FROM b",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a"}, Aliases: []string{""}},
 			Err:      nil,
 		},
 		{
 			Name:     "SELECT with alias works",
-			SQL:      "SELECT a AS text FROM 'b'",
+			SQL:      "SELECT a AS text FROM b",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a"}, Aliases: []string{"text"}},
 			Err:      nil,
 		},
 		{
 			Name:     "SELECT with alias works",
-			SQL:      "SELECT version(a) AS version FROM 'b'",
+			SQL:      "SELECT version(a) AS version FROM b",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"version(a)"}, Aliases: []string{"version"}},
 			Err:      nil,
 		},
 		{
 			Name:     "SELECT works with lowercase",
-			SQL:      "select a fRoM 'b'",
+			SQL:      "select a fRoM b",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a"}, Aliases: []string{""}},
 			Err:      nil,
 		},
 		{
 			Name:     "SELECT many fields works",
-			SQL:      "SELECT a, c, d FROM 'b'",
+			SQL:      "SELECT a, c, d FROM b",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a", "c", "d"}, Aliases: []string{"", "", ""}},
 			Err:      nil,
 		},
 		{
 			Name:     "SELECT with empty WHERE fails",
-			SQL:      "SELECT a, c, d FROM 'b' WHERE",
+			SQL:      "SELECT a, c, d FROM b WHERE",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a", "c", "d"}, Aliases: []string{"", "", ""}},
 			Err:      fmt.Errorf("at WHERE: empty WHERE clause"),
 		},
 		{
 			Name:     "SELECT with WHERE with only operand fails",
-			SQL:      "SELECT a, c, d FROM 'b' WHERE a",
+			SQL:      "SELECT a, c, d FROM b WHERE a",
 			Expected: query.Query{Type: query.Select, TableName: "b", Fields: []string{"a", "c", "d"}, Aliases: []string{"", "", ""}},
 			Err:      fmt.Errorf("at WHERE: condition without operator"),
 		},
 		{
 			Name: "SELECT with WHERE with = works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a = ''",
+			SQL:  "SELECT a, c, d FROM b WHERE a = ''",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("''")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with < works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a < '1'",
+			SQL:  "SELECT a, c, d FROM b WHERE a < '1'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Lt, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Lt, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with <= works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a <= '1'",
+			SQL:  "SELECT a, c, d FROM b WHERE a <= '1'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Lte, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Lte, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with > works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a > '1'",
+			SQL:  "SELECT a, c, d FROM b WHERE a > '1'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Gt, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Gt, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with >= works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a >= '1'",
+			SQL:  "SELECT a, c, d FROM b WHERE a >= '1'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Gte, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Gte, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with != works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a != '1'",
+			SQL:  "SELECT a, c, d FROM b WHERE a != '1'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Ne, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Ne, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT with WHERE with != works (comparing field against another field)",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a != b",
+			SQL:  "SELECT a, c, d FROM b WHERE a != b",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Ne, Operand2: "b", Operand2Type: query.OpField},
+					{Operand1: query.NewOperandField("a"), Operator: query.Ne, Operand2: query.NewOperandField("b")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "SELECT * works",
-			SQL:  "SELECT * FROM 'b'",
+			SQL:  "SELECT * FROM b",
 			Expected: query.Query{
 				Type:       query.Select,
 				TableName:  "b",
@@ -213,7 +213,7 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name: "SELECT a, * works",
-			SQL:  "SELECT a, * FROM 'b'",
+			SQL:  "SELECT a, * FROM b",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
@@ -224,14 +224,14 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name: "SELECT with WHERE with two conditions using AND works",
-			SQL:  "SELECT a, c, d FROM 'b' WHERE a != '1' AND b = '2'",
+			SQL:  "SELECT a, c, d FROM b WHERE a != '1' AND b = '2'",
 			Expected: query.Query{
 				Type:      query.Select,
 				TableName: "b",
 				Fields:    []string{"a", "c", "d"}, Aliases: []string{"", "", ""},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Ne, Operand2: "1", Operand2Type: query.OpQuoted},
-					{Operand1: "b", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "2", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Ne, Operand2: query.NewOperandString("'1'")},
+					{Operand1: query.NewOperandField("b"), Operator: query.Eq, Operand2: query.NewOperandString("'2'")},
 				},
 			},
 			Err: nil,
@@ -244,89 +244,89 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name:     "Incomplete UPDATE with table name fails",
-			SQL:      "UPDATE 'a'",
+			SQL:      "UPDATE a",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: WHERE clause is mandatory for UPDATE & DELETE"),
 		},
 		{
 			Name:     "Incomplete UPDATE with table name and SET fails",
-			SQL:      "UPDATE 'a' SET",
+			SQL:      "UPDATE a SET",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: WHERE clause is mandatory for UPDATE & DELETE"),
 		},
 		{
 			Name:     "Incomplete UPDATE with table name, SET with a field but no value and WHERE fails",
-			SQL:      "UPDATE 'a' SET b WHERE",
+			SQL:      "UPDATE a SET b WHERE",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at UPDATE: expected '='"),
 		},
 		{
 			Name:     "Incomplete UPDATE with table name, SET with a field and = but no value and WHERE fails",
-			SQL:      "UPDATE 'a' SET b = WHERE",
+			SQL:      "UPDATE a SET b = WHERE",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at UPDATE: expected quoted value"),
 		},
 		{
 			Name:     "Incomplete UPDATE due to no WHERE clause fails",
-			SQL:      "UPDATE 'a' SET b = 'hello' WHERE",
+			SQL:      "UPDATE a SET b = 'hello' WHERE",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: empty WHERE clause"),
 		},
 		{
 			Name:     "Incomplete UPDATE due incomplete WHERE clause fails",
-			SQL:      "UPDATE 'a' SET b = 'hello' WHERE a",
+			SQL:      "UPDATE a SET b = 'hello' WHERE a",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: condition without operator"),
 		},
 		{
 			Name: "UPDATE works",
-			SQL:  "UPDATE 'a' SET b = 'hello' WHERE a = '1'",
+			SQL:  "UPDATE a SET b = 'hello' WHERE a = '1'",
 			Expected: query.Query{
 				Type:      query.Update,
 				TableName: "a",
-				Updates:   map[string]string{"b": "hello"},
+				Updates:   map[string]query.Operand{"b": query.NewOperandString("'hello'")},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "UPDATE works with simple quote inside",
-			SQL:  "UPDATE 'a' SET b = 'hello\\'world' WHERE a = '1'",
+			SQL:  "UPDATE a SET b = 'hello\\'world' WHERE a = '1'",
 			Expected: query.Query{
 				Type:      query.Update,
 				TableName: "a",
-				Updates:   map[string]string{"b": "hello\\'world"},
+				Updates:   map[string]query.Operand{"b": query.NewOperandString("'hello\\'world'")},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "UPDATE with multiple SETs works",
-			SQL:  "UPDATE 'a' SET b = 'hello', c = 'bye' WHERE a = '1'",
+			SQL:  "UPDATE a SET b = 'hello', c = 'bye' WHERE a = '1'",
 			Expected: query.Query{
 				Type:      query.Update,
 				TableName: "a",
-				Updates:   map[string]string{"b": "hello", "c": "bye"},
+				Updates:   map[string]query.Operand{"b": query.NewOperandString("'hello'"), "c": query.NewOperandString("'bye'")},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
 		},
 		{
 			Name: "UPDATE with multiple SETs and multiple conditions works",
-			SQL:  "UPDATE 'a' SET b = 'hello', c = 'bye' WHERE a = '1' AND b = '789'",
+			SQL:  "UPDATE a SET b = 'hello', c = 'bye' WHERE a = '1' AND b = '789'",
 			Expected: query.Query{
 				Type:      query.Update,
 				TableName: "a",
-				Updates:   map[string]string{"b": "hello", "c": "bye"},
+				Updates:   map[string]query.Operand{"b": query.NewOperandString("'hello'"), "c": query.NewOperandString("'bye'")},
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpQuoted},
-					{Operand1: "b", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "789", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("'1'")},
+					{Operand1: query.NewOperandField("b"), Operator: query.Eq, Operand2: query.NewOperandString("'789'")},
 				},
 			},
 			Err: nil,
@@ -339,30 +339,30 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name:     "DELETE without WHERE fails",
-			SQL:      "DELETE FROM 'a'",
+			SQL:      "DELETE FROM a",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: WHERE clause is mandatory for UPDATE & DELETE"),
 		},
 		{
 			Name:     "DELETE with empty WHERE fails",
-			SQL:      "DELETE FROM 'a' WHERE",
+			SQL:      "DELETE FROM a WHERE",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: empty WHERE clause"),
 		},
 		{
 			Name:     "DELETE with WHERE with field but no operator fails",
-			SQL:      "DELETE FROM 'a' WHERE b",
+			SQL:      "DELETE FROM a WHERE b",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at WHERE: condition without operator"),
 		},
 		{
 			Name: "DELETE with WHERE works",
-			SQL:  "DELETE FROM 'a' WHERE b = '1'",
+			SQL:  "DELETE FROM a WHERE b = '1'",
 			Expected: query.Query{
 				Type:      query.Delete,
 				TableName: "a",
 				Conditions: []query.Condition{
-					{Operand1: "b", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("b"), Operator: query.Eq, Operand2: query.NewOperandString("'1'")},
 				},
 			},
 			Err: nil,
@@ -375,81 +375,84 @@ func TestSQL(t *testing.T) {
 		},
 		{
 			Name:     "INSERT with no rows to insert fails",
-			SQL:      "INSERT INTO 'a'",
+			SQL:      "INSERT INTO a",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: need at least one row to insert"),
 		},
 		{
 			Name:     "INSERT with incomplete value section fails",
-			SQL:      "INSERT INTO 'a' (",
+			SQL:      "INSERT INTO a (",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: need at least one row to insert"),
 		},
 		{
 			Name:     "INSERT with incomplete value section fails #2",
-			SQL:      "INSERT INTO 'a' (b",
+			SQL:      "INSERT INTO a (b",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: need at least one row to insert"),
 		},
 		{
 			Name:     "INSERT with incomplete value section fails #3",
-			SQL:      "INSERT INTO 'a' (b)",
+			SQL:      "INSERT INTO a (b)",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: need at least one row to insert"),
 		},
 		{
 			Name:     "INSERT with incomplete value section fails #4",
-			SQL:      "INSERT INTO 'a' (b) VALUES",
+			SQL:      "INSERT INTO a (b) VALUES",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: need at least one row to insert"),
 		},
 		{
 			Name:     "INSERT with incomplete row fails",
-			SQL:      "INSERT INTO 'a' (b) VALUES (",
+			SQL:      "INSERT INTO a (b) VALUES (",
 			Expected: query.Query{},
 			Err:      fmt.Errorf("at INSERT INTO: value count doesn't match field count"),
 		},
 		{
 			Name: "INSERT works",
-			SQL:  "INSERT INTO 'a' (b) VALUES ('1')",
+			SQL:  "INSERT INTO a (b) VALUES ('1')",
 			Expected: query.Query{
 				Type:      query.Insert,
 				TableName: "a",
 				Fields:    []string{"b"},
-				Inserts:   [][]string{{"1"}},
+				Inserts:   [][]query.Operand{{query.NewOperandString("'1'")}},
 			},
 			Err: nil,
 		},
 		{
 			Name: "INSERT * fails",
-			SQL:  "INSERT INTO 'a' (*) VALUES ('1')",
+			SQL:  "INSERT INTO a (*) VALUES ('1')",
 			Expected: query.Query{
 				Type:      query.Insert,
 				TableName: "a",
 				Fields:    []string{"*"},
-				Inserts:   [][]string{{"1"}},
+				Inserts:   [][]query.Operand{{query.NewOperandString("'1'")}},
 			},
 			Err: fmt.Errorf("at INSERT INTO: expected at least one field to insert"),
 		},
 		{
 			Name: "INSERT with multiple fields works",
-			SQL:  "INSERT INTO 'a' (b,c,    d) VALUES ('1','2' ,  '3' )",
+			SQL:  "INSERT INTO a (b,c,    d) VALUES ('1','2' ,  '3' )",
 			Expected: query.Query{
 				Type:      query.Insert,
 				TableName: "a",
 				Fields:    []string{"b", "c", "d"},
-				Inserts:   [][]string{{"1", "2", "3"}},
+				Inserts:   [][]query.Operand{{query.NewOperandString("'1'"), query.NewOperandString("'2'"), query.NewOperandString("'3'")}},
 			},
 			Err: nil,
 		},
 		{
 			Name: "INSERT with multiple fields and multiple values works",
-			SQL:  "INSERT INTO 'a' (b,c,    d) VALUES ('1','2' ,  '3' ),('4','5' ,'6' )",
+			SQL:  "INSERT INTO a (b,c,    d) VALUES ('1','2' ,  '3' ),('4','5' ,'6' )",
 			Expected: query.Query{
 				Type:      query.Insert,
 				TableName: "a",
 				Fields:    []string{"b", "c", "d"},
-				Inserts:   [][]string{{"1", "2", "3"}, {"4", "5", "6"}},
+				Inserts: [][]query.Operand{
+					{query.NewOperandString("'1'"), query.NewOperandString("'2'"), query.NewOperandString("'3'")},
+					{query.NewOperandString("'4'"), query.NewOperandString("'5'"), query.NewOperandString("'6'")},
+				},
 			},
 			Err: nil,
 		},
@@ -501,7 +504,7 @@ func TestWhere(t *testing.T) {
 			SQL:  "a ",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.UnknownOperator, Operand2: "", Operand2Type: query.OpUnknown},
+					{Operand1: query.NewOperandField("a"), Operator: query.UnknownOperator, Operand2: nil},
 				},
 			},
 			Err:   nil,
@@ -512,7 +515,7 @@ func TestWhere(t *testing.T) {
 			SQL:  "a = ''",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "", Operand2Type: query.OpQuoted},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandString("''")},
 				},
 			},
 			Err:   nil,
@@ -523,29 +526,29 @@ func TestWhere(t *testing.T) {
 			SQL:  "a>=1",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Gte, Operand2: "1", Operand2Type: query.OpNumber},
+					{Operand1: query.NewOperandField("a"), Operator: query.Gte, Operand2: query.NewOperandNumber("1")},
 				},
 			},
 			Err:   nil,
 			Ended: true,
 		},
 		{
-			Name: "WHERE a = 1.24",
+			Name: "WHERE a >= 1.24",
 			SQL:  "a>= 1.24",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Gte, Operand2: "1.24", Operand2Type: query.OpNumber},
+					{Operand1: query.NewOperandField("a"), Operator: query.Gte, Operand2: query.NewOperandNumber("1.24")},
 				},
 			},
 			Err:   nil,
 			Ended: true,
 		},
 		{
-			Name: "WHERE a = -1.21",
+			Name: "WHERE a >= -1.21",
 			SQL:  "a>=-1.21",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Gte, Operand2: "-1.21", Operand2Type: query.OpNumber},
+					{Operand1: query.NewOperandField("a"), Operator: query.Gte, Operand2: query.NewOperandNumber("-1.21")},
 				},
 			},
 			Err:   nil,
@@ -556,8 +559,8 @@ func TestWhere(t *testing.T) {
 			SQL:  "a = 1 AND b > a1",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "1", Operand2Type: query.OpNumber},
-					{Operand1: "b", Operand1Type: query.OpField, Operator: query.Gt, Operand2: "a1", Operand2Type: query.OpField},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: query.NewOperandNumber("1")},
+					{Operand1: query.NewOperandField("b"), Operator: query.Gt, Operand2: query.NewOperandField("a1")},
 				},
 			},
 			Err:   nil,
@@ -568,7 +571,7 @@ func TestWhere(t *testing.T) {
 			SQL:  "a = 1a",
 			Expected: query.Query{
 				Conditions: []query.Condition{
-					{Operand1: "a", Operand1Type: query.OpField, Operator: query.Eq, Operand2: "", Operand2Type: query.OpUnknown},
+					{Operand1: query.NewOperandField("a"), Operator: query.Eq, Operand2: nil},
 				},
 			},
 			Err:   fmt.Errorf("at WHERE: expected quoted value"),
@@ -619,7 +622,7 @@ func BenchmarkSQLSelect(b *testing.B) {
 }
 
 func BenchmarkSQLInsert(b *testing.B) {
-	sql := "INSERT INTO 'a' (b,c,    d) VALUES ('1','2' ,  '3' )"
+	sql := "INSERT INTO a (b,c,    d) VALUES ('1','2' ,  '3' )"
 	for i := 0; i < b.N; i++ {
 		q, err := Parse(sql)
 		if err != nil {

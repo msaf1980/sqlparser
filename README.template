@@ -38,10 +38,8 @@ query.Query {
 	Conditions: [{{range .Expected.Conditions}}
         {
             Operand1: {{.Operand1}},
-            Operand1Type: {{.Operand1Type}},
             Operator: {{index $operators .Operator}},
             Operand2: {{.Operand2}},
-            Operand2Type: {{.Operand2Type}},
         }{{end -}}]
 	Updates: {{.Expected.Updates}}
 	Inserts: {{.Expected.Inserts}}

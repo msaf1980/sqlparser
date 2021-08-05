@@ -1,12 +1,14 @@
 package query
 
+import "strings"
+
 // Query represents a parsed query
 type Query struct {
 	Type       Type
 	TableName  string
 	Conditions []Condition
-	Updates    map[string]string
-	Inserts    [][]string
+	Updates    map[string]Operand
+	Inserts    [][]Operand
 	Fields     []string // Used for SELECT (i.e. SELECTed field names) and INSERT (INSERTEDed field names)
 	Aliases    []string // Used for SELECT (i.e. SELECTed field_name AS alias_name)
 }
@@ -54,6 +56,8 @@ const (
 	Gte
 	// Lte -> "<="
 	Lte
+	// IN (..)
+	In
 )
 
 // OperatorString is a string slice with the names of all operators in order
@@ -76,16 +80,71 @@ const (
 	OpNumber
 )
 
+type Operand interface {
+	Dump() string
+}
+
+type OperandString struct {
+	value string
+}
+
+func NewOperandString(value string) *OperandString {
+	return &OperandString{value}
+}
+
+func (o *OperandString) Dump() string {
+	return o.value
+}
+
+type OperandNumber struct {
+	value string
+}
+
+func NewOperandNumber(value string) *OperandNumber {
+	return &OperandNumber{value}
+}
+
+func (o *OperandNumber) Dump() string {
+	return o.value
+}
+
+type OperandField struct {
+	value string
+}
+
+func NewOperandField(value string) *OperandField {
+	if len(value) > 0 && value[0] == '\'' {
+		return &OperandField{value[1 : len(value)-1]}
+	}
+	return &OperandField{value}
+}
+
+func (o *OperandField) Dump() string {
+	return o.value
+}
+
+type OperandStrArray struct {
+	values []string
+}
+
+func NewOperandStrArray(value string) *OperandStrArray {
+	return &OperandStrArray{[]string{value}}
+}
+
+func (o *OperandStrArray) Dump() string {
+	return strings.Join(o.values, ",")
+}
+
+type OperandNumArray struct {
+	value []string
+}
+
 // Condition is a single boolean condition in a WHERE clause
 type Condition struct {
 	// Operand1 is the left hand side operand
-	Operand1 string
-	// Operand1IsField determines if Operand1 is a literal or a field name
-	Operand1Type OperandType
+	Operand1 Operand
 	// Operator is e.g. "=", ">"
 	Operator Operator
 	// Operand1 is the right hand side operand
-	Operand2 string
-	// Operand2IsField determines if Operand2 is a literal or a field name
-	Operand2Type OperandType
+	Operand2 Operand
 }

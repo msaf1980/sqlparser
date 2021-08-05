@@ -93,7 +93,9 @@ const (
 	stepWhereField
 	stepWhereOperator
 	stepWhereValue
+	stepWhereValues // IN (..)
 	stepWhereAnd
+	stepWhereOr
 )
 
 type parser struct {
@@ -140,7 +142,7 @@ func (p *parser) doParse() (query.Query, error) {
 				p.step = stepInsertTable
 			case "UPDATE":
 				p.query.Type = query.Update
-				p.query.Updates = map[string]string{}
+				p.query.Updates = map[string]query.Operand{}
 				p.step = stepUpdateTable
 			case "DELETE":
 				p.pop()
@@ -196,32 +198,32 @@ func (p *parser) doParse() (query.Query, error) {
 			p.step = stepSelectFromTable
 		case stepSelectFromTable:
 			tableName := p.peek(false)
-			if len(tableName) == 0 {
-				return p.query, newError(p.i, "at SELECT: expected quoted table name")
+			if len(tableName) == 0 || tableName[0] == '\'' {
+				return p.query, newError(p.i, "at SELECT: expected quoted or empty table name")
 			}
 			p.query.TableName = tableName
 			p.pop()
 			p.step = stepWhere
 		case stepInsertTable:
 			tableName := p.peek(false)
-			if len(tableName) == 0 {
-				return p.query, newError(p.i, "at INSERT INTO: expected quoted table name")
+			if len(tableName) == 0 || tableName[0] == '\'' {
+				return p.query, newError(p.i, "at INSERT INTO: expected quoted or empty table name")
 			}
 			p.query.TableName = tableName
 			p.pop()
 			p.step = stepInsertFieldsOpeningParens
 		case stepDeleteFromTable:
 			tableName := p.peek(false)
-			if len(tableName) == 0 {
-				return p.query, newError(p.i, "at DELETE FROM: expected quoted table name")
+			if len(tableName) == 0 || tableName[0] == '\'' {
+				return p.query, newError(p.i, "at DELETE FROM: expected quoted or empty table name")
 			}
 			p.query.TableName = tableName
 			p.pop()
 			p.step = stepWhere
 		case stepUpdateTable:
 			tableName := p.peek(false)
-			if len(tableName) == 0 {
-				return p.query, newError(p.i, "at UPDATE: expected quoted table name")
+			if len(tableName) == 0 || tableName[0] == '\'' {
+				return p.query, newError(p.i, "at UPDATE: expected quoted or empty table name")
 			}
 			p.query.TableName = tableName
 			p.pop()
@@ -253,7 +255,7 @@ func (p *parser) doParse() (query.Query, error) {
 			if p.len == 0 {
 				return p.query, newError(p.i, "at UPDATE: expected quoted value")
 			}
-			p.query.Updates[p.nextUpdateField] = quotedValue
+			p.query.Updates[p.nextUpdateField] = query.NewOperandString(quotedValue)
 			p.nextUpdateField = ""
 			p.pop()
 			maybeWhere := p.peek(true)
@@ -317,15 +319,15 @@ func (p *parser) doParse() (query.Query, error) {
 			if openingParens != "(" {
 				return p.query, newError(p.i, "at INSERT INTO: expected opening parens")
 			}
-			p.query.Inserts = append(p.query.Inserts, []string{})
+			p.query.Inserts = append(p.query.Inserts, []query.Operand{})
 			p.pop()
 			p.step = stepInsertValues
 		case stepInsertValues:
-			quotedValue := p.peekQuotedString(false)
-			if p.len == 0 {
+			quotedValue := p.peek(false)
+			if !p.peekQuoted {
 				return p.query, newError(p.i, "at INSERT INTO: expected quoted value")
 			}
-			p.query.Inserts[len(p.query.Inserts)-1] = append(p.query.Inserts[len(p.query.Inserts)-1], quotedValue)
+			p.query.Inserts[len(p.query.Inserts)-1] = append(p.query.Inserts[len(p.query.Inserts)-1], query.NewOperandString(quotedValue))
 			p.pop()
 			p.step = stepInsertValuesCommaOrClosingParens
 		case stepInsertValuesCommaOrClosingParens:
@@ -368,7 +370,7 @@ func (p *parser) parseWhere() (bool, error) {
 		case stepWhereField:
 			identifier := p.peek(false)
 			if p.peekQuoted {
-				p.query.Conditions = append(p.query.Conditions, query.Condition{Operand1: identifier, Operand1Type: query.OpQuoted})
+				p.query.Conditions = append(p.query.Conditions, query.Condition{Operand1: query.NewOperandString(identifier)})
 			} else {
 				if len(identifier) == 0 {
 					return false, newError(p.i, "at WHERE: empty WHERE clause")
@@ -380,7 +382,7 @@ func (p *parser) parseWhere() (bool, error) {
 
 					return true, nil
 				}
-				p.query.Conditions = append(p.query.Conditions, query.Condition{Operand1: identifier, Operand1Type: query.OpField})
+				p.query.Conditions = append(p.query.Conditions, query.Condition{Operand1: query.NewOperandField(identifier)})
 			}
 			p.pop()
 			p.step = stepWhereOperator
@@ -401,25 +403,28 @@ func (p *parser) parseWhere() (bool, error) {
 				currentCondition.Operator = query.Lte
 			case rNE:
 				currentCondition.Operator = query.Ne
+			case rIN:
+				currentCondition.Operator = query.In
 			default:
 				return false, newError(p.i, "at WHERE: unknown operator")
 			}
 			p.query.Conditions[len(p.query.Conditions)-1] = currentCondition
 			p.pop()
-			p.step = stepWhereValue
+			if currentCondition.Operator == query.In {
+				p.step = stepWhereValues
+			} else {
+				p.step = stepWhereValue
+			}
 		case stepWhereValue:
 			currentCondition := p.query.Conditions[len(p.query.Conditions)-1]
 			identifier := p.peek(false)
 			if p.peekQuoted {
-				currentCondition.Operand2 = identifier
-				currentCondition.Operand2Type = query.OpQuoted
+				currentCondition.Operand2 = query.NewOperandString(identifier)
 			} else {
 				if isIdentifier, isNumber := isIdentifier(identifier); isIdentifier {
-					currentCondition.Operand2 = identifier
-					currentCondition.Operand2Type = query.OpField
+					currentCondition.Operand2 = query.NewOperandField(identifier)
 				} else if isNumber {
-					currentCondition.Operand2 = identifier
-					currentCondition.Operand2Type = query.OpNumber
+					currentCondition.Operand2 = query.NewOperandNumber(identifier)
 				} else {
 					return false, newError(p.i, "at WHERE: expected quoted value")
 				}
@@ -427,6 +432,8 @@ func (p *parser) parseWhere() (bool, error) {
 			p.query.Conditions[len(p.query.Conditions)-1] = currentCondition
 			p.pop()
 			p.step = stepWhereAnd
+		// case stepWhereValues:
+		// 	currentCondition := p.query.Conditions[len(p.query.Conditions)-1]
 		case stepWhereAnd:
 			andRWord := p.peek(true)
 			if andRWord != "AND" {
@@ -501,6 +508,7 @@ const (
 	rCOMMA        // ","
 	rSEMI         //";"
 	rEX           // "!"
+	rIN           // "IN"
 	rAS           // "AS"
 	rSELECT       // "SELECT"
 	rINSERT       // "INSERT"
@@ -537,6 +545,7 @@ var (
 		"!=":     rNE,
 		",":      rCOMMA,
 		";":      rSEMI,
+		"IN":     rIN,
 		"AS":     rAS,
 		"SELECT": rSELECT,
 		"INSERT": rINSERT,
@@ -580,7 +589,7 @@ func (p *parser) peekQuotedStringWithLength(upper bool) (string, int) {
 			if upper {
 				return p.sqlUpper[p.i+1 : i], len(p.sqlUpper[p.i+1:i]) + 2 // +2 for the two quotes
 			}
-			return p.sql[p.i+1 : i], len(p.sql[p.i+1:i]) + 2 // +2 for the two quotes
+			return p.sql[p.i : i+1], len(p.sql[p.i : i+1])
 		}
 	}
 	return "", 0
@@ -646,12 +655,6 @@ func (p *parser) validate() error {
 	for _, c := range p.query.Conditions {
 		if c.Operator == query.UnknownOperator {
 			return newError(p.i, "at WHERE: condition without operator")
-		}
-		if c.Operand1 == "" && c.Operand1Type == query.OpField {
-			return newError(p.i, "at WHERE: condition with empty left side operand")
-		}
-		if c.Operand2 == "" && c.Operand2Type == query.OpField {
-			return newError(p.i, "at WHERE: condition with empty right side operand")
 		}
 	}
 	if p.query.Type == query.Insert && len(p.query.Inserts) == 0 {
